@@ -57,6 +57,7 @@ flowchart LR
 - `physics_foundation.py`: He thong dieu khien vat ly goc (`TransferPolicy -> ... -> EmptyDayConsistentPolicy` + bo uoc luong `bounded_rls`). Day la moc goc khong duoc lam yeu di.
 - `building_profiler.py`: Tu dong phan tich xu huong 72h tung toa nha, tinh do nhay counterfactual action (`corr(delta_action, advantage)`), ve `building_trends_profile.png` va tim phan hoach **Balanced 3-Fold** can bang ca Base score, ty le AHU hoat dong, dien tich va nhiet do ngoai troi.
 - `collect_and_profile.ipynb` *(Chay Kaggle CPU, Accelerator = None)*: Chay 30 kich ban x 864 steps de tao cache du lieu chuan dung chung cho moi thi nghiem sau, giup cac notebook GPU khong phai mat 60-80 phut chay lai simulator.
+- `key_snapshot_profiler.py` & `profile_key_snapshots.ipynb` *(Chay nhanh ~5-8 phut)*: **Key-Position Counterfactual Snapshot Benchmark** — chup snapshot dung `env + policy + RNG (Python/NumPy/Numba)` tai **6 vi tri ban le trong 72h**, re nhanh song song `H = 24` buoc de lap **Ma tran Vi tri x Quyet dinh** (biet chinh xac tai vi tri nao, quyet dinh vat ly hay model Stage 1/2 nao manh nhat).
 - `thermal_residual_net.py` & `train_stage1_thermal.ipynb` *(Chay Kaggle GPU)*: **Stage 1 — Danh vao Diem yeu #1 cua Base.**
 - `warp_resip.py` & `train_and_evaluate.ipynb` *(Chay Kaggle GPU)*: **Stage 2 — Lop Offline RL an toan (`Stochastic IQL-AWR` + `Safety Shield`)**.
 
@@ -104,6 +105,10 @@ flowchart LR
 3. Sau khi xong, vao muc **Output** cua phien Kaggle do, nhan **New Dataset** (dat ten vi du `ml-sbc-cache-864s`) hoac Attach Notebook Output truc tiep cho cac notebook GPU buoc sau.
 4. Tai ve cac file phan tich nhe: `base_scores_*.json`, `balanced_3fold_*.json`, `building_trends_profile.png` va log bang `th_summary` + `df_prof`.
 
+### Buoc 1.5: Chup & Cham Snapshot tai 6 Vi tri Ban le (`profile_key_snapshots.ipynb`)
+1. Chay `profile_key_snapshots.ipynb` tren Kaggle (~5-8 phut voi `SCENARIOS_PER_BLDG = 2`), co the chay truoc hoac sau khi train Stage 1/2 (neu attach output `thermal_net_fold*.pt` / `warp_resip_*_fold*.pt`, notebook tu nap dung model OOF theo tung toa nha).
+2. Lay 3 file dau ra `key_snapshots_matrix.csv`, `key_snapshots_summary.csv`, `key_snapshots_heatmap.png` de xem **tai moi vi tri (`POS_1` -> `POS_6`), quyet dinh nao thang Base manh nhat** va thang nho `comfort` hay `energy`.
+
 ### Buoc 2: Chay Stage 1 & Stage 2 tren Kaggle GPU (Wave 1, Wave 2)
 1. Tao notebook Kaggle GPU (P100 hoac T4), **Add Input** tro toi dataset `ml-sbc-cache-864s` (va dataset cuoc thi `neurips-2026-smart-buildings`).
 2. Chay `train_stage1_thermal.ipynb` truoc (Save & Run All): lay `oof_stage1_thermal.csv`, `stage1_thermal_curves.png`, `stage1_config.json` va ghi lai `OOF Mean ThermalNN` + `mae_gain%`.
@@ -117,6 +122,7 @@ Sau moi dot chay, nhom dung bang quyet dinh sau de chot huong Wave ke tiep thay 
 
 | Tin hieu quan sat duoc | Chan doan | Hanh dong Wave tiep theo |
 | :--- | :--- | :--- |
+| Key Snapshots: thay ro 1-2 quyet dinh thang dam o `POS_X` va thua o `POS_Y` | Can khoanh vung dieu khien theo ngu canh | Giu/day manh gate o `POS_X`, khoa gate = 0 o `POS_Y` |
 | Stage 0: `rls_mae_K` cao ro ret theo gio nang / gio co nguoi | Stage 1 co du dia cai thien lon | Uu tien hoan thien Stage 1 (`train_stage1_thermal.ipynb`) |
 | Stage 1: `OOF Diff > 0` va giam `nn_mae` o ca 3 fold | Stage 1 hoat dong that, khong leak | Submit Stage 1 len LB; chon `ThermalAugmentedPolicy` lam Base moi |
 | Stage 1: giam `nn_mae` nhung `OOF Diff < 0` | `max_corr = 0.8` hoac `alpha_nn` qua manh lam lech damping | Giam `alpha_nn` (`0.15 - 0.30`) hoac chi ap dung NN khi `model_error > 0.15` |
@@ -139,7 +145,7 @@ mkdir -p experiment_logs/wave_1_thermal
 # 3. Cap nhat bang tom tat ket qua & ket luan huong di moi vao EXPERIMENTS.md
 
 # 4. Kiem tra cu phap cac module Python va xem trang thai git
-python3 -m py_compile physics_foundation.py warp_resip.py building_profiler.py thermal_residual_net.py
+python3 -m py_compile physics_foundation.py warp_resip.py building_profiler.py thermal_residual_net.py key_snapshot_profiler.py
 git status
 
 # 5. Commit & Push sach se len GitHub
