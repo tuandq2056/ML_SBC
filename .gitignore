@@ -38,3 +38,10 @@ smart_buildings/test_buildings/
 smart_buildings/test_scenarios/
 **/holdout*/
 **/test_set*/
+
+# Model checkpoints & large cached replay buffers
+*.pt
+*.pth
+*.npz
+*.parquet
+
