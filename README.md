@@ -1,3 +1,5 @@
+> **ML_SBC Team Docs:** Xem huong dan quy trinh chay Kaggle, khung ly thuyet, hyperparameter & cach push ket qua tai [`WORKFLOW.md`](WORKFLOW.md) va nhat ky thuc nghiem theo tung dot tai [`EXPERIMENTS.md`](EXPERIMENTS.md).
+
 # Smart Buildings Foundation Model Competition — Starter Kit
 
 Develop a single control policy that operates the HVAC systems of commercial
