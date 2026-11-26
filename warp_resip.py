@@ -353,13 +353,16 @@ def extract_warp_state(policy, obs_arr, temperature, low, high, mode, oat_ema):
 
 
 class WarpResiPMixin:
-    """Mixin layering Stochastic Warp RL + Physics-Uncertainty Gate + Physics Re-projection."""
+    """Mixin layering Stochastic Warp RL + Physics-Uncertainty Gate + Physics Safety Shield."""
     def __init__(self, building_meta_data, action_spec=None, parameters=None,
-                 actors=None, action_modifier=None, dev=None, smooth_alpha=0.5):
+                 actors=None, action_modifier=None, dev=None, smooth_alpha=0.5,
+                 comfort_shield=True, target_water_only=False):
         self._actors = actors if isinstance(actors, (list, tuple)) else ([actors] if actors is not None else [])
         self._action_modifier = action_modifier
         self._dev = dev or torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self._smooth_alpha = float(smooth_alpha)
+        self._comfort_shield = bool(comfort_shield)
+        self._target_water_only = bool(target_water_only)
         super().__init__(building_meta_data, action_spec, parameters)
 
     def reset(self):
@@ -369,6 +372,8 @@ class WarpResiPMixin:
         self._last_gate = np.zeros(AHU_ACT_DIM, dtype=np.float32)
         self._last_thermal_sample = None
         self._prev_delta_x = np.zeros(AHU_ACT_DIM, dtype=np.float32)
+        self._shield_checks = 0
+        self._shield_hits = 0
 
     def _learn(self, observed):
         delay = int(self.parameters['observation_delay'])
@@ -394,6 +399,28 @@ class WarpResiPMixin:
                 'zone_area': self.zone_area.copy(),
             }
         super()._learn(observed)
+
+    def _ahu_step_metrics(self, group, temperature, free, low, high, outside, choice):
+        t, d, lo, hi = temperature[group], free[group], low[group], high[group]
+        response = self.theta[group, 5]
+        inside = float(np.average(t, weights=self.zone_area[group]))
+        supply = choice['supply']
+        conductance = choice['conductance']
+        reheat = choice['reheat']
+        predicted = (t + d + response * (conductance * supply + reheat) / 1000.0) / (
+            1.0 + response * conductance / 1000.0)
+        violation = np.maximum(lo - predicted, 0.0) + np.maximum(predicted - hi, 0.0)
+        thermal_penalty = float(np.sum(violation + 2.0 * violation ** 2))
+        if choice['run'] == 0:
+            obj = float(self.parameters['comfort_cost']) * thermal_penalty
+        else:
+            flow = conductance / self.AIR_CAPACITY
+            mixed = choice['recirc'] * inside + (1.0 - choice['recirc']) * outside
+            fan = float(flow.sum()) * choice['pressure'] * (2.0 - choice['recirc']) / 0.9
+            chiller = float((flow * self.AIR_CAPACITY * np.maximum(mixed - supply, 0.0)).sum()) / 3.5
+            gas = float(reheat.sum())
+            obj = fan + chiller + float(self.parameters['gas_cost_ratio']) * gas + float(self.parameters['comfort_cost']) * thermal_penalty
+        return thermal_penalty, float(obj)
 
     def _reproject_ahu(self, group, temperature, free, low, high, max_flow, outside, water,
                        setpoint_w, pressure_w, recirc_w):
@@ -533,11 +560,16 @@ class WarpResiPMixin:
         else:
             x_eff = x_base.copy()
 
+        if self._target_water_only:
+            x_eff = np.array([x_base[0], x_base[1], x_base[2], x_eff[3]], dtype=np.float32)
+
         delta_x = x_eff - x_base
         if np.allclose(delta_x, 0.0, atol=1e-7):
             water_target = base_water_target
         else:
             water_target = float(np.clip(330.0 + 20.0 * float(x_eff[3]), 310.0, 350.0))
+            if self._comfort_shield and self._action_modifier is None and (any_reheat_10 or np.any(temperature + free < low)):
+                water_target = max(water_target, base_water_target)
 
         continuous = np.full(self.n_continuous, -1.0, dtype=np.float32)
         discrete = np.zeros(self.n_discrete, dtype=np.int32)
@@ -549,13 +581,23 @@ class WarpResiPMixin:
             c = base_choices[i]
             if c is None:
                 continue
-            if c['run'] == 1 and not np.allclose(delta_x[:3], 0.0, atol=1e-7):
+            if c['run'] == 1 and not self._target_water_only and not np.allclose(delta_x[:3], 0.0, atol=1e-7):
                 sat_w = float(np.clip(c['setpoint'] + 10.0 * float(delta_x[0]), 285.0, 305.0))
                 press_w = float(np.clip(c['pressure'] + 1000.0 * float(delta_x[1]), self.MIN_PRESSURE, self.DESIGN_PRESSURE))
                 recirc_w = float(np.clip(c['recirc'] + 0.5 * float(delta_x[2]), 0.0, self.MAX_RECIRCULATION))
-                c = self._reproject_ahu(
+                c_w = self._reproject_ahu(
                     group, temperature, free, low, high, max_flow,
                     float(outside_ahu[i]), float(water_available), sat_w, press_w, recirc_w)
+                if self._comfort_shield and self._action_modifier is None:
+                    self._shield_checks += 1
+                    pen_b, _ = self._ahu_step_metrics(group, temperature, free, low, high, float(outside_ahu[i]), c)
+                    pen_w, obj_w = self._ahu_step_metrics(group, temperature, free, low, high, float(outside_ahu[i]), c_w)
+                    if (not np.isfinite(obj_w)) or (pen_w > pen_b + 1e-6):
+                        self._shield_hits += 1
+                    else:
+                        c = c_w
+                else:
+                    c = c_w
 
             discrete[i] = c['run']
             continuous[self.temp_indices[i]] = TransferPolicy._native_action(
