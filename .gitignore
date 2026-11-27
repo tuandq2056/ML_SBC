@@ -44,4 +44,5 @@ smart_buildings/test_scenarios/
 *.pth
 *.npz
 *.parquet
+data_v2_out/
 
