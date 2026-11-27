@@ -29,6 +29,11 @@ except Exception:
     ThermalAugmentedPolicy = None
 
 try:
+    from scipy.sparse.linalg import SuperLU as _SuperLU
+except Exception:
+    _SuperLU = None
+
+try:
     from smart_buildings.smart_control.simulator.stochastic_convection_simulator import _seed_kernel_rng
 except Exception:
     def _seed_kernel_rng(seed):
@@ -139,6 +144,36 @@ def _instantiate_arm_policy(arm_spec, meta, action_spec, src_policy, obs_arr):
     return pol
 
 
+def _collect_superlu_memo(obj, seen=None, memo=None):
+    """Collect cached SuperLU objects into a deepcopy memo so deepcopy reuses them."""
+    if seen is None:
+        seen, memo = set(), {}
+    oid = id(obj)
+    if oid in seen:
+        return memo
+    seen.add(oid)
+    if _SuperLU is not None and isinstance(obj, _SuperLU):
+        memo[oid] = obj
+        return memo
+    if isinstance(obj, dict):
+        for v in obj.values():
+            _collect_superlu_memo(v, seen, memo)
+    elif isinstance(obj, (list, tuple, set)):
+        for v in obj:
+            _collect_superlu_memo(v, seen, memo)
+    elif hasattr(obj, '__dict__'):
+        for v in obj.__dict__.values():
+            _collect_superlu_memo(v, seen, memo)
+    return memo
+
+
+def _clone_env(env):
+    """Deep-copy an environment while sharing read-only SuperLU factorizations."""
+    if env is None:
+        raise ValueError('Snapshot environment is None')
+    return copy.deepcopy(env, _collect_superlu_memo(env))
+
+
 def _run_branch_from_snapshot(snap, arm_spec, horizon, load_env_fn, create_meta_fn, sc_path, branch_seed):
     random.setstate(snap['py_rng'])
     np.random.set_state(snap['np_rng'])
@@ -146,7 +181,7 @@ def _run_branch_from_snapshot(snap, arm_spec, horizon, load_env_fn, create_meta_
 
     clone_mode = 'deepcopy'
     try:
-        env_b = copy.deepcopy(snap['env'])
+        env_b = _clone_env(snap.get('env'))
         obs_b = np.array(snap['obs'], copy=True)
     except Exception:
         clone_mode = 'replay'
@@ -255,7 +290,7 @@ def collect_scenario_snapshots(sc_path, load_env_fn, create_meta_fn, steps=864, 
                     'np_rng': np.random.get_state(),
                 }
                 try:
-                    snap_obj['env'] = copy.deepcopy(env)
+                    snap_obj['env'] = _clone_env(env)
                 except Exception:
                     snap_obj['env'] = None
                 for pos in triggers:

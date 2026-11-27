@@ -13,9 +13,9 @@ Chi tiet ly thuyet, kien truc va quy trinh push file xem tai [`WORKFLOW.md`](WOR
 | **Baseline** | `EmptyDayConsistentPolicy` (Vat ly goc) | `physics_foundation.py` | Full 30 scenarios | `-5.0692` | `+0.0000` | `~0.010` | Moc chuan bat buoc phai vuot |
 | **Legacy v1** | Deterministic `TD3+BC` + `symlog` + `Q1` (khong Shield) | `train_and_evaluate.ipynb` (cu) | 5-Fold `GroupKFold` | `-19.8996` | `-14.8304` | - | **Da loai bo:** Fold 3 `building_train_4` rot `-81.3099` do OOD & `symlog` |
 | **Wave 0** | Thu thap 864 steps + Building Profiler + Balanced 3-Fold | `collect_and_profile.ipynb` | Balanced 3-Fold | `-5.0692` | `0.0000` | - | **Hoan tat:** Da chot 3-Fold, luu `experiment_logs/wave_0_profile/` |
-| **Snapshots** | 6 Vi tri ban le x Quyet dinh vat ly + Model (Re nhanh `H=24` buoc) | `profile_key_snapshots.ipynb` | Exact Snapshot Branching | *(Chua chay)* | *(Ma tran 6x10)* | - | Lap ban do vi tri nao quyet dinh nao manh (`key_snapshots_matrix.csv`, `key_snapshots_heatmap.png`) |
-| **Wave 1** | **Stage 1:** `ThermalResidualResNet` (`_free_drift`) | `train_stage1_thermal.ipynb` | Balanced 3-Fold | *(Chua chay)* | *(Cho so lieu)* | *(Chua submit)* | **Uu tien so 1:** Sua sai so RLS thieu `hod_sin/cos` & `occ_norm` |
-| **Wave 2** | **Stage 2:** Stochastic `IQL-AWR` + `CAPS` + `Safety Shield` | `train_and_evaluate.ipynb` | Balanced 3-Fold | *(Chua chay)* | *(Cho so lieu)* | *(Chua submit)* | **Uu tien so 2:** Chay doi chung hoac bat `TARGET_WATER_ONLY=True` neu AHU bi shield |
+| **Snapshots** | 6 Vi tri ban le x Quyet dinh vat ly (Re nhanh `H=24` buoc) | `profile_key_snapshots.ipynb` | Exact Snapshot Branching | `water_310K` manh nhat | `+0.0024` den `+0.1425` | - | **Hoan tat:** Giam nhiet nuoc (`water_310K`/`325K`) thang o ca 4/4 vi tri active; luu `experiment_logs/snapshots/` |
+| **Wave 1** | **Stage 1:** `ThermalResidualResNet` (`_free_drift`, `alpha_nn=0.5`) | `train_stage1_thermal.ipynb` | Balanced 3-Fold | **`-4.9062`** | **`+0.1630`** | *(Chua submit)* | **Dat moc vuot Base o 6/6 toa:** De xuat submit LB & dung `ThermalAugmentedPolicy` lam Base moi |
+| **Wave 2** | **Stage 2:** Stochastic `IQL-AWR` + `CAPS` + `Safety Shield` (`WATER_ONLY=False`) | `train_and_evaluate.ipynb` | Balanced 3-Fold | `-5.0699` | `-0.0007` | *(Chua submit)* | **AHU warp khong vuot Base:** Fold 0,2 giu Identity (`0.0000`), Fold 1 `-0.0020` -> thu Wave 2b `TARGET_WATER_ONLY=True` |
 | **Wave 3** | Ghep Stage 1 + Stage 2 hoac tinh chinh theo phan tich Wave 1-2 | *(Tuy ket qua Wave 1-2)* | Balanced 3-Fold | *(Chua chay)* | *(Cho so lieu)* | *(Chua submit)* | Se mo ta chi tiet sau khi co log cua Wave 1 & Wave 2 |
 
 ---
@@ -43,6 +43,48 @@ Chi tiet ly thuyet, kien truc va quy trinh push file xem tai [`WORKFLOW.md`](WOR
 - **Nhan xet tu `building_trends_profile.png`:**
   - `corr_water` duong nhat quan o ca 6 toa (`+0.025` den `+0.219`, manh nhat o `building_train_8` `+0.219`, `building_train_5` `+0.124`, `building_train_7` `+0.095`) va `corr_recirc` duong nhe o ca 6 toa (`+0.030` den `+0.104`), trong khi `corr_press` am nhe (`-0.019` den `-0.138`) va `corr_sat` phan hoa theo toa (`-0.060` den `+0.106`).
   - Sai so RLS tap trung cao hon o `building_train_2` va `building_train_8` (~`1.22–1.23%` buoc lech `>0.3K`), la hai toa nang nhat va co du dia cho Stage 1 / Stage 2.
+
+---
+
+### Snapshots: Key-Position Counterfactual Snapshot Profiler (`2026-11-27`)
+- **Moi truong chay:** Kaggle CPU (`SCENARIOS_PER_BLDG = 2`, `12` kich ban, `STEPS_SCAN = 864`, `HORIZON = 24`; fix loi `SuperLU` deepcopy trong `key_snapshot_profiler.py`).
+- **File dinh kem:** `experiment_logs/snapshots/` (`key_snapshots_matrix.csv`, `key_snapshots_summary.csv`, `key_snapshots_detail.csv`, `key_snapshots_heatmap.png`)
+- **Ket qua noi bat (Mean 2h Gain vs Base):**
+  - `POS_1_MORNING_WARMUP` (`n=12`): `water_310K` **`+0.0464`** (win `33.3%`), `water_325K` `+0.0318` (`33.3%`), `press_-25%` `+0.0122` (win `58.3%`); `recirc_eco` `-0.0633`, `sat_-2K` `-0.0461`.
+  - `POS_2_PEAK_COOLING` (`n=11`): `water_310K` / `water_325K` **`+0.0041`** (win `27.3%`), `press_-25%` `+0.0000` (`9.1%`); `press_+25%` `-0.0373`, `recirc_eco` `-0.0253`.
+  - `POS_3_MILD_SHOULDER` (`n=4`): `water_310K` **`+0.1425`** (win **`100.0%`**), `water_325K` `+0.0933` (`100.0%`), `sat_+2K` `+0.0003` (`25.0%`); `recirc_eco` `-0.1053`, `sat_-2K` `-0.0608`.
+  - `POS_5_EMPTY_DAY_START` (`n=1`): tat ca arm vat ly deu `0.0000`.
+  - `POS_6_WEEKEND_WATER_HOLD` (`n=4`): `water_310K` / `water_325K` **`+0.0024`** (win **`100.0%`**), cac arm AHU `0.0000`.
+- **Ket luan:** Giam nhiet nuoc nong (`water_310K`/`325K`) la quyet dinh thang ro ret nhat nho tiet kiem energy & carbon, trong khi ha ap suat nhe (`press_-25%`) chi co loi o `POS_1_MORNING_WARMUP`.
+
+---
+
+### Wave 1: Stage 1 Physics-Informed Thermal Residual Net (`2026-11-27`)
+- **Moi truong chay:** Kaggle GPU (`train_stage1_thermal.ipynb`)
+- **Cau hinh chinh:** `EPOCHS = 20`, `BATCH_SIZE = 2048`, `LR = 1e-3`, `best_alpha = 0.5` (`stage1_config.json`)
+- **File dinh kem:** `experiment_logs/wave_1_thermal/` (`oof_stage1_thermal.csv`, `stage1_thermal_curves.png`, `stage1_config.json`)
+- **Ket qua chi tiet (3-Fold OOF, 864 steps, 30/30 kich ban):**
+  - Fold 0 (`["building_train_1", "building_train_7"]`): Base `-5.2525` -> ThermalNN `-5.2096` (**Diff `+0.0429`**) — `B1: +0.0395`, `B7: +0.0462`
+  - Fold 1 (`["building_train_2", "building_train_5"]`): Base `-4.9695` -> ThermalNN `-4.8118` (**Diff `+0.1578`**) — `B2: +0.2762`, `B5: +0.0394`
+  - Fold 2 (`["building_train_4", "building_train_8"]`): Base `-4.9857` -> ThermalNN `-4.6974` (**Diff `+0.2883`**) — `B4: +0.1178`, `B8: +0.4588`
+  - **OOF Mean:** Base `-5.0692` -> ThermalNN **`-4.9062`** (**Diff `+0.1630`**)
+- **Phan tich:** Ca `6/6` toa nha unseen deu tang diem ro ret; hai toa nang nhat va sai so RLS cao nhat (`building_train_8` `+0.4588` va `building_train_2` `+0.2762`) huong loi manh nhat khi bo sung `hod_sin/cos` + `occ_norm` vao `_free_drift`.
+- **De xuat:** Submit Stage 1 (`ThermalAugmentedPolicy`) len Kaggle LB, va thu nghiem dung `ThermalAugmentedPolicy` lam Base cho Stage 2 / Wave 3.
+
+---
+
+### Wave 2: Stage 2 Stochastic IQL-AWR + CAPS + Safety Shield (`2026-11-27`)
+- **Moi truong chay:** Local RTX 4060 (`train_and_evaluate.ipynb`)
+- **Cau hinh chinh:** `BASE_MODE='empty_day'`, `COMFORT_SHIELD=True`, `TARGET_WATER_ONLY=False`, `TRAIN_ITERS=3000`, `BATCH_SIZE=256`, `IQL_TAU=0.70`, `BETA_AWR=3.0`, `EPI_PENALTY=0.50`
+- **File dinh kem:** `experiment_logs/wave_2_iql_warp/` (`oof_stage2_iql_warp.csv`, `oof_stage2_iql_warp.png`, `stage2_iql_curves.png`, `stage2_config.json`)
+- **Ket qua chi tiet (3-Fold OOF, 864 steps, 30/30 kich ban):**
+  - Fold 0 (`["building_train_1", "building_train_7"]`): Base `-5.2525` -> Warp-IQL `-5.2525` (`Diff +0.0000`, `shield_rate = 0.00%`, `BestTrainedPilotDiff = -0.0011`)
+  - Fold 1 (`["building_train_2", "building_train_5"]`): Base `-4.9695` -> Warp-IQL `-4.9716` (`Diff -0.0020`, `shield_rate = 4.32%`, `BestTrainedPilotDiff = +0.0022`) — `B2: -0.0033`, `B5: -0.0008`
+  - Fold 2 (`["building_train_4", "building_train_8"]`): Base `-4.9857` -> Warp-IQL `-4.9857` (`Diff +0.0000`, `shield_rate = 0.00%`, `BestTrainedPilotDiff = -0.0039`)
+  - **OOF Mean:** Base `-5.0692` -> Warp-IQL `-5.0699` (**Diff `-0.0007`**)
+  - **Mean 4D ResiP Gate `[SAT, Press, Recirc, Water]`:** `[0.0541, 0.0790, 0.0751, 0.0781]`
+- **Phan tich:** Cơ che `SavedSafeDiff` da giu Identity an toan o Fold 0 va Fold 2 khi `BestTrainedPilotDiff <= 0`; Fold 1 tang nhe tren 1 kich ban pilot nhung giam `-0.0020` tren full 10 kich ban. Khop voi ket qua `Snapshots`, bo giai AHU vat ly `x_base[:3]` da gan toi uu cuc bo, du dia chinh nam o `water_target`.
+- **De xuat Wave tiep theo:** Bat **`TARGET_WATER_ONLY = True`** (Wave 2b) hoac ghep chong **`ThermalAugmentedPolicy` + `TARGET_WATER_ONLY = True`** (Wave 3) va chay lai `profile_key_snapshots.ipynb` voi checkpoint Stage 1/2.
 
 ---
 
