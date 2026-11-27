@@ -1,6 +1,25 @@
 # ML_SBC: Workflow, Ly thuyet & Quy trinh Phat trien (NeurIPS 2026 Smart Buildings)
 
-Tai lieu nay he thong hoa toan bo kien truc, co so ly thuyet, loi that bai da chan doan va quy trinh chay/push ket qua theo tung dot (Wave) de moi thanh vien trong nhom co the hieu, chay lai tren Kaggle, phan tich so lieu va dong bo len GitHub `https://github.com/tuandq2056/ML_SBC.git`.
+Tai lieu nay he thong hoa toan bo chien luoc chia tap Train/Test, kien truc, co so ly thuyet, loi that bai da chan doan va quy trinh chay/push ket qua theo tung dot (Wave) de moi thanh vien trong nhom co the hieu, chay lai tren Kaggle, phan tich so lieu va dong bo len GitHub `https://github.com/tuandq2056/ML_SBC.git`.
+
+---
+
+## 0. Chien luoc Chia Tap Train / Test & Lo trinh 2 Nga (Doc truoc khi chay)
+
+### Cach chia chuan cho Dataset goc (`6` toa nha = `30` kich ban)
+- **KHONG dung `sklearn.StratifiedKFold` thuong:** Chia ngang tren tung dong/kich ban se xep cung 1 toa nha vao ca Train lan Test (`Data Leakage` 100% mat bang `floor_plan` va vat lieu `materials`).
+- **KHONG chi cat cung 1 cap 4/2 vinh vien:** Voi chi `6` toa nha goc, cat bo han 2 toa khoi qua trinh huan luyen lam mat `1/3` mat bang quy gia va khien ket qua phu thuoc may rui vao dung 2 toa do.
+- **Chon Balanced Building-Scaffold 3-Fold xoay vong (chot trong `experiment_logs/wave_0_profile/balanced_3fold_empty_day_s864_n30.json`):** Toi uu dong thoi diem `Base`, nhiet do ngoai troi `oat_mean`, do dan nhiet `exterior_cv_conductivity`, khoi luong tuong `exterior_cv_density`, sai so `rls_err_mean` va ty le `active_pct`:
+  - **Fold 0:** Val/Test = `building_train_1, building_train_7` (`Base -5.252`, `ext_dens 1191.0`, `cond 0.380`) | Train = `B2, B4, B5, B8`
+  - **Fold 1:** Val/Test = `building_train_2, building_train_5` (`Base -4.970`, `ext_dens 882.4`, `cond 0.321`, `zones 164`) | Train = `B1, B4, B7, B8` (`Base -5.119`, `zones 159`)
+  - **Fold 2:** Val/Test = `building_train_4, building_train_8` (`Base -4.986`, `ext_dens 806.9`, `cond 0.226`) | Train = `B1, B2, B5, B7`
+- **Quy trinh chay 2 buoc tren bo chia nay:**
+  1. **Thu nhanh (Fast Holdout 1-Split):** Dat `FOLDS_TO_RUN = [1]` de chay duy nhat **Fold 1** (`Train = B1,B4,B7,B8` | `Test = B2,B5`). Day la cap 4/2 can bang nhat ca ve `Base`, `conductivity`, `density`, `RMSE` va tong `zones` (`159` vs `164`), rat tot de debug nhanh va inspect loi ma van giu `B2, B5` hoan toan unseen.
+  2. **Chot chinh thuc (Full 3-Fold OOF = 30 kich ban):** Chay du `FOLDS_TO_RUN = [0, 1, 2]` (tuyet doi khong chinh hyperparameter rieng cho tung fold), gop ket qua test cua ca 3 fold de cham du 30/30 kich ban 0% leak, kiem chung lai o moc `8640` steps va ensemble ca 3 fold khi submit Kaggle (hoac chay 6-Fold LOOCV o ban cuoi).
+
+### Lo trinh 2 Nga (Chong loang du lieu)
+1. **Nga 1 (Uu tien chay truoc — Thuan Dataset goc 30 kich ban):** Khong them toa nha hay thoi tiet ngoai. Chi lam giau dac trung tu `obs`/`building_meta_data` san co (`zone_ua`, `day_of_week`, dao ham nhiet, trong so duoi sai so cao) va kiem chung OOF 3-Fold trên dung Wave 0.
+2. **Nga 2 (Chi mo khi Nga 1 chung minh bi thieu da dang mat bang):** Tach rieng `18` dai thoi tiet chua tung dung (`minneapolis_1..8` + 10 strip du) va `4-6` toa sinh `seed 900+` lam **Holdout Test co dinh**; mo rong Train bang ghep cheo mua + toa sinh tu `run_floor_generator.py` (`width 318-430 x height 188-301`, giu ty le tron <= 50% de tranh loang phan phoi that).
 
 ---
 

@@ -7,10 +7,34 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import yaml
 
 
-def _all_partitions(items, k=3):
-    """Generate unique k-way balanced-size partitions of buildings."""
+def _load_building_materials(building_name, buildings_dir=None):
+    """Read envelope conductivity & density from building YAML if available."""
+    candidates = []
+    if buildings_dir is not None:
+        candidates.append(Path(buildings_dir) / f'{building_name}.yaml')
+    candidates.extend([
+        Path('smart_buildings/buildings') / f'{building_name}.yaml',
+        Path(__file__).resolve().parent / 'smart_buildings/buildings' / f'{building_name}.yaml',
+    ])
+    for p in candidates:
+        if p.exists():
+            try:
+                data = yaml.safe_load(p.read_text()) or {}
+                m = data.get('materials', {})
+                return (
+                    float(m.get('exterior_cv_conductivity', np.nan)),
+                    float(m.get('exterior_cv_density', np.nan)),
+                )
+            except Exception:
+                pass
+    return np.nan, np.nan
+
+
+def _all_partitions(items, k=3, feat_w=None):
+    """Generate unique k-way balanced-size partitions (exact for n=6, multi-start greedy for larger N)."""
     items = list(items)
     n = len(items)
     if n == 6 and k == 3:
@@ -26,13 +50,29 @@ def _all_partitions(items, k=3):
                     yield (pair,) + sub
         yield from _pairs(items)
         return
+    if feat_w is not None and n >= k:
+        global_mean = feat_w.mean(axis=0)
+        rng = np.random.default_rng(42)
+        for trial in range(64):
+            order = np.argsort(feat_w[:, 0]) if trial == 0 else rng.permutation(n)
+            folds = [[] for _ in range(k)]
+            max_sz = (n + k - 1) // k
+            for idx in order:
+                cands = [f for f in range(k) if len(folds[f]) < max_sz]
+                best_f = min(
+                    cands,
+                    key=lambda f: float(np.linalg.norm(feat_w[folds[f] + [int(idx)]].mean(axis=0) - global_mean)),
+                )
+                folds[best_f].append(int(idx))
+            yield tuple(tuple(items[i] for i in f) for f in folds)
+        return
     folds = [[] for _ in range(k)]
     for idx, item in enumerate(items):
         folds[idx % k].append(item)
     yield tuple(tuple(f) for f in folds)
 
 
-def profile_buildings(BUF, df_audit, BASE_SCORES, out_dir=None, n_folds=3):
+def profile_buildings(BUF, df_audit, BASE_SCORES, out_dir=None, n_folds=3, buildings_dir=None):
     """Analyze physical/control/reward trends per building and find optimal balanced folds."""
     b_arr = BUF['bldg']
     anc_mask = BUF['is_anchor'] == 1
@@ -123,6 +163,8 @@ def profile_buildings(BUF, df_audit, BASE_SCORES, out_dir=None, n_folds=3):
             'corr_press': corrs[1],
             'corr_recirc': corrs[2],
             'corr_water': corrs[3],
+            'ext_cond': _load_building_materials(b, buildings_dir=buildings_dir)[0],
+            'ext_dens': _load_building_materials(b, buildings_dir=buildings_dir)[1],
         })
 
     df_prof = pd.DataFrame(rows)
@@ -139,16 +181,23 @@ def profile_buildings(BUF, df_audit, BASE_SCORES, out_dir=None, n_folds=3):
     cols2 = ['building', 'cold_viol_pct', 'hot_viol_pct', 'rls_err_mean', 'sat_act_C', 'press_act_Pa', 'exp_win_act_pct', 'corr_sat', 'corr_press', 'corr_recirc', 'corr_water']
     print(df_prof[cols2].round(3).to_string(index=False))
 
-    strat_cols = ['base_mean', 'active_pct', 'water345_pct', 'oat_mean_C', 'rls_err_mean']
+    has_mats = bool(df_prof['ext_cond'].notna().all() and df_prof['ext_dens'].notna().all()
+                    and df_prof['ext_cond'].std() > 1e-8 and df_prof['ext_dens'].std() > 1e-8)
+    if has_mats:
+        strat_cols = ['base_mean', 'oat_mean_C', 'ext_cond', 'ext_dens', 'rls_err_mean', 'active_pct']
+        weights = np.array([2.5, 1.5, 1.5, 1.5, 1.0, 0.5])
+    else:
+        strat_cols = ['base_mean', 'active_pct', 'water345_pct', 'oat_mean_C', 'rls_err_mean']
+        weights = np.array([2.0, 1.5, 1.0, 1.0, 1.0])
+
     feat_mat = df_prof[strat_cols].to_numpy(dtype=float)
     feat_z = (feat_mat - feat_mat.mean(axis=0)) / (feat_mat.std(axis=0) + 1e-8)
-    weights = np.array([2.0, 1.5, 1.0, 1.0, 1.0])
     feat_w = feat_z * weights
     global_mean = feat_w.mean(axis=0)
 
     b_to_idx = {b: i for i, b in enumerate(buildings)}
     best_part, best_score = None, float('inf')
-    for part in _all_partitions(buildings, k=n_folds):
+    for part in _all_partitions(buildings, k=n_folds, feat_w=feat_w):
         max_dev = 0.0
         for grp in part:
             idx = [b_to_idx[b] for b in grp]
@@ -166,18 +215,18 @@ def profile_buildings(BUF, df_audit, BASE_SCORES, out_dir=None, n_folds=3):
         tr_grp = [b for b in buildings if b not in val_grp]
         v_df = df_prof[df_prof['building'].isin(val_grp)]
         t_df = df_prof[df_prof['building'].isin(tr_grp)]
-        fold_check.append({
+        row_fc = {
             'fold': f_idx,
             'val_buildings': ', '.join(val_grp),
             'val_base': round(float(v_df['base_mean'].mean()), 3),
             'tr_base': round(float(t_df['base_mean'].mean()), 3),
             'val_active%': round(float(v_df['active_pct'].mean()), 1),
-            'tr_active%': round(float(t_df['active_pct'].mean()), 1),
-            'val_water345%': round(float(v_df['water345_pct'].mean()), 1),
-            'tr_water345%': round(float(t_df['water345_pct'].mean()), 1),
             'val_oat_C': round(float(v_df['oat_mean_C'].mean()), 1),
-            'tr_oat_C': round(float(t_df['oat_mean_C'].mean()), 1),
-        })
+        }
+        if has_mats:
+            row_fc['val_cond'] = round(float(v_df['ext_cond'].mean()), 3)
+            row_fc['val_dens'] = round(float(v_df['ext_dens'].mean()), 1)
+        fold_check.append(row_fc)
     print(pd.DataFrame(fold_check).to_string(index=False))
 
     if df_audit is not None:

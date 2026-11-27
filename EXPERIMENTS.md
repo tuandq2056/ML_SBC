@@ -25,10 +25,14 @@ Chi tiet ly thuyet, kien truc va quy trinh push file xem tai [`WORKFLOW.md`](WOR
 ### Wave 0: CPU Data Collection & Building Trend Profiling (`collect_and_profile.ipynb`)
 - **Trang thai:** Hoan tat (`51,480` RL samples; `1,392,130` Zone thermal samples; Base Mean `-5.0692`).
 - **Thu muc log:** `experiment_logs/wave_0_profile/` (`base_scores_empty_day_s864_n30.json`, `balanced_3fold_empty_day_s864_n30.json`, `building_trends_profile.png`)
-- **Phan hoach 3-Fold can bang chot duoc** (Max Standardized Deviation = `1.374`):
+- **Phan hoach 3-Fold ban dau cua Wave 0** (Max Standardized Deviation = `1.374`):
   - `Fold 0 = ["building_train_1", "building_train_4"]` (`val_base = -5.039`, `tr_base = -5.084`)
   - `Fold 1 = ["building_train_2", "building_train_7"]` (`val_base = -5.672`, `tr_base = -4.768`)
   - `Fold 2 = ["building_train_5", "building_train_8"]` (`val_base = -4.497`, `tr_base = -5.355`)
+- **Cap nhat chuan hoa 3-Fold can bang them vat lieu (`ext_cond`, `ext_dens`) & `rls` cho cac Wave tiep theo** (`balanced_3fold_empty_day_s864_n30.json`, Max Deviation = `1.322`, Base spread giam tu `1.175` xuong `0.283`):
+  - `Fold 0 = ["building_train_1", "building_train_7"]` (`val_base = -5.252`, `ext_dens = 1191.0`, `cond = 0.380`)
+  - `Fold 1 = ["building_train_2", "building_train_5"]` (`val_base = -4.970`, `ext_dens = 882.4`, `cond = 0.321` — dung lam Fast 1-Split Holdout `Train=1,4,7,8 / Test=2,5`)
+  - `Fold 2 = ["building_train_4", "building_train_8"]` (`val_base = -4.986`, `ext_dens = 806.9`, `cond = 0.226`)
 - **Bang `th_summary` (Sai so RLS):**
   - `building_train_1` (`168,090`): MAE `0.0146` K, RMSE `0.0852` K, `>0.3K`: `0.58%`
   - `building_train_2` (`366,350`): MAE `0.0245` K, RMSE `0.1791` K, `>0.3K`: `1.22%`
