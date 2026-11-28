@@ -1,0 +1,7 @@
+{
+  "base_mode": "empty_day",
+  "comfort_shield": true,
+  "shield_margin": 0.05,
+  "target_water_only": false,
+  "experiment": "exp1_counterfactual_delta_reward"
+}

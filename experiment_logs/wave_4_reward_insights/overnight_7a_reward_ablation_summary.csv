@@ -1,0 +1,4 @@
+experiment,description,oof_base,oof_warp,oof_diff,worst_diff,best_diff,shield_rate,elapsed_hours
+exp1_counterfactual_delta_reward,Counterfactual Residual Reward (Delta_r = r_n - r_anc) + RMS-Normalized AWR,-5.069222234185023,-5.063950579575415,0.005271654609608352,-0.004162254554103129,0.10361266685504233,0.0073863163803453225,1.5289432964060041
+exp2_asymmetric_comfort_tail_reward,Asymmetric Comfort-Tail Reward (2.0x downside on Delta_r < 0) + Tau=0.75,-5.069222234185023,-5.067512752247641,0.0017094819373824066,-0.005947629542788491,0.04830099279570277,0.007151329091502192,3.0359871047735214
+exp3_pure_behavior_cloning_warp,"Pure Behavior Cloning Spline Warp (No Reward / No Critic Advantage, Milestone 11/12)",-5.069222234185023,-5.063811910457844,0.005410323727179881,-0.024131869647135318,0.20510227248450974,0.008888503817342597,4.501491898629401

@@ -16,8 +16,10 @@ Chi tiet ly thuyet, kien truc va quy trinh push file xem tai [`WORKFLOW.md`](WOR
 | **Snapshots** | 6 Vi tri ban le x Quyet dinh vat ly (Re nhanh `H=24` buoc) | `profile_key_snapshots.ipynb` | Exact Snapshot Branching | `water_310K` manh nhat | `+0.0024` den `+0.1425` | - | **Hoan tat:** Giam nhiet nuoc (`water_310K`/`325K`) thang o ca 4/4 vi tri active; luu `experiment_logs/snapshots/` |
 | **Wave 1** | **Stage 1:** `ThermalResidualResNet` (`_free_drift`, `alpha_nn=0.5`) | `train_stage1_thermal.ipynb` | Balanced 3-Fold | **`-4.9062`** | **`+0.1630`** | **`0.00997`** *(Rank #308)* | **Dat moc vuot Base o 6/6 toa:** Da submit LB & dung `ThermalAugmentedPolicy` lam Base cho Wave 3 |
 | **Wave 2** | **Stage 2:** Stochastic `IQL-AWR` + `CAPS` + `Safety Shield` (`WATER_ONLY=False`) | `train_and_evaluate.ipynb` | Balanced 3-Fold | `-5.0699` | `-0.0007` | *(Chua submit)* | **AHU warp khong vuot Base:** Fold 0,2 giu Identity (`0.0000`), Fold 1 `-0.0020` -> thu Wave 2b `TARGET_WATER_ONLY=True` |
-| **Wave 2b** | **meoluoi3 Ablation (8 runs):** `WATER_ONLY`, `No Shield`, `No CAPS`, **3-Paper Upgrade (`Soft-Margin 0.05 / 0.15` + Dodeja + DAWN)**, `Linear vs Spline` | Kaggle GPU T4 (`meoluoi3`) | Wave 0 3-Fold (`[1,4]\|[2,7]\|[5,8]`) | **`-5.0615`** *(Best Safe)* / **`-5.0511`** *(No Shield)* | **`+0.0077`** / **`+0.0181`** | *(Running `Run 4a`)* | **Hoan tat 8-run Ablation:** `Spline > Linear`, khep kin Pareto 4 diem (`1e-6 -> 0.05 -> 0.15 -> inf`), xac nhan DAWN (`critic_sens`, `val_diff`) & CAPS |
-| **Wave 3** | **Stage 1 (`ThermalResidualResNet`) + Stage 2 (`run4a` 3-Paper Upgrade, MRO Parity `0.00000000`)** | `run6b_wave3_stage1_plus_stage2.ipynb` (`meoluoi3`) | Wave 0 3-Fold (`[1,4]\|[2,7]\|[5,8]`) | **`-4.8954`** | **`+0.1738`** *(+0.0108 vs S1)* | *(Running `Run 6b`)* | **Ky luc moi toan team (thang Base 6/6 toa):** `MRO diff=0.00000000`, dang chay rerun Kaggle LB |
+| **Wave 2b** | **meoluoi3 Ablation (8 runs):** `WATER_ONLY`, `No Shield`, `No CAPS`, **3-Paper Upgrade (`Soft-Margin 0.05 / 0.15` + Dodeja + DAWN)**, `Linear vs Spline` | Kaggle GPU T4 (`meoluoi3`) | Wave 0 3-Fold (`[1,4]\|[2,7]\|[5,8]`) | **`-5.0615`** *(Best Safe)* / **`-5.0511`** *(No Shield)* | **`+0.0077`** / **`+0.0181`** | **`0.00998`** *(`Run 4a`)* | **Hoan tat 8-run Ablation:** `Spline > Linear`, khep kin Pareto 4 diem (`1e-6 -> 0.05 -> 0.15 -> inf`), xac nhan DAWN (`critic_sens`, `val_diff`) & CAPS |
+| **Wave 3** | **Stage 1 (`ThermalResidualResNet`) + Stage 2 (`run4a` 3-Paper Upgrade, MRO Parity `0.00000000`)** | `run6b_wave3_stage1_plus_stage2.ipynb` (`meoluoi3`) | Wave 0 3-Fold (`[1,4]\|[2,7]\|[5,8]`) | **`-4.8954`** | **`+0.1738`** *(+0.0108 vs S1)* | **`0.00997`** *(`Run 6b`)* | **Ky luc moi toan team (thang Base 6/6 toa):** `MRO diff=0.00000000`, LB ngang dinh `0.00997` (Stage 2 them `+0.0108/864 = 1.25e-5/step`) |
+| **Wave 4** | **Reward Insights & BC Baseline (`Run 7a`):** Counterfactual `Δr`, Asymmetric `2x`, Pure BC Spline | `run7a_overnight_reward_insights.ipynb` (`meoluoi3`) | Wave 0 3-Fold (`[1,4]\|[2,7]\|[5,8]`) | **`-5.0640`** *(`Δr`)* / `-5.0638` *(BC)* | **`+0.0053`** *(worst `-0.0042`)* | - | **Khu `99.58%` nhieu thoi tiet (`SNR 15.38x`):** `Δr` an toan gap `5.8x` Pure BC (`-0.0042` vs `-0.0241`, BC thua `18/30` kich ban) |
+| **Wave 5** | **Co-Adapted Wave 3 (`Run 7b`):** Stage-1 Replay + `Δr` (`Full4D` vs `WaterOnly`) + **6-Day Eval (`1728` steps)** | `run7b_overnight_true_wave3_coadapt.ipynb` (`meoluoi3`) | Material-Balanced 3-Fold (`[1,7]\|[2,5]\|[4,8]`) | **`-4.9080`** *(`Full4D`)* / `-4.9090` *(`Water`)* | **`+0.1613`** *(`+0.0013` vs S1)* | - | **Monotonic & 6-Day Durable:** `WaterOnly` thang `17/30` hoa `13/30` thua **`0/30`**; dai han `1728` steps thang S1 o **ca `6/6` toa** |
 
 ---
 
@@ -103,7 +105,7 @@ Chi tiet ly thuyet, kien truc va quy trinh push file xem tai [`WORKFLOW.md`](WOR
 | `run6a_pareto015` | Spline Warp (Full 3 Papers) + **Soft-Shield `0.15`** + Water Reach-Avoid + **DAWN Diagnostics** | `-5.0651` | `+0.0041` | `-0.0206` | `0.41%` | Khep kin Pareto (`1e-6 -> 0.05 -> 0.15 -> inf`): `0.15` long qua (`B4/denver_2: -0.0206`), khang dinh `0.05` la dinh toi uu; `critic_sens=0.68-1.22`, `val_diff=+0.0061..+0.0112` |
 | `run2_water_only` | Spline Warp + Shield cung + **`WATER_ONLY=True`** | `-5.0643` | **`+0.0050`** | `-0.0044` | `0.00%` | Chinh chon loc nuoc nong an toan (`B8/fairbanks_8: +0.1002`) |
 | `run3b_fork` | Spline Warp + No Shield + **tat CAPS (`0.0`)** | `-5.0639` | `+0.0053` | `-0.0158`* | `0.00%` | Tat CAPS lam tut diem >3x so voi `run3_no_shield` -> CAPS bat buoc |
-| `run4a_3papers_full4d` *(Best Safe)* | **Spline Warp + Soft-Shield `0.05` + go tran Water (Dodeja) + BO Actor LN (DAWN) + Multi-Weather Pilot** | **`-5.0615`** | **`+0.0077`** | **`-0.0097`** | `0.73%` | **Can bang Safety-Optimality tot nhat:** giam lo worst-case **8.7x** so voi `run3`, dao nguoc `B1/fairbanks_1` tu `-0.0843 -> +0.0524` *(dang submit Kaggle LB)* |
+| `run4a_3papers_full4d` *(Best Safe)* | **Spline Warp + Soft-Shield `0.05` + go tran Water (Dodeja) + BO Actor LN (DAWN) + Multi-Weather Pilot** | **`-5.0615`** | **`+0.0077`** | **`-0.0097`** | `0.73%` | **Can bang Safety-Optimality tot nhat:** giam lo worst-case **8.7x** so voi `run3`, dao nguoc `B1/fairbanks_1` tu `-0.0843 -> +0.0524` (**Kaggle LB: `0.00998`**) |
 | `run3_no_shield` *(Max Mean)* | Spline Warp + **`COMFORT_SHIELD=False`** + CAPS | **`-5.0511`** | **`+0.0181`** | **`-0.0843`** | `0.00%` | Cao nhat (`B2/fairbanks_2: +0.6163`) nhung rui ro duoi cao 8.7x |
 
 - **Ket luan & De xuat Wave 3:**
@@ -126,7 +128,31 @@ Chi tiet ly thuyet, kien truc va quy trinh push file xem tai [`WORKFLOW.md`](WOR
   - **Kich ban noi bat:** `B8/fairbanks_8 (+1.3819)`, `B2/fairbanks_2 (+1.1600)`, `B8/phoenix_4 (+0.5423)`, `B4/denver_2 (+0.5142)`; `shield_rate = 0.11%`; thang Base o **ca 6/6 toa nha**.
 - **Phan tich & Huong tiep theo:**
   - Co che **Safe Identity Fallback** hoat dong chinh xac o Fold 1 khi tap replay Stage 2 cu (`EmptyDay`) co *Offline Distribution Shift* so voi quy dao Stage 1.
-  - Da submit song song **`submit_run4a_inference_only` (V4)** va **`submit_run6b_wave3_inference_only` (V1)** len Kaggle Hidden Test (dang chay rerun). De day Stage 2 cong them nhieu hon nua tren Stage 1 o Wave tiep theo, can thu thap replay data moi truc tiep tu chinh `ThermalAugmentedPolicy` (`Stage 1`) thay vi dung lai replay cua `EmptyDay`.
+  - **Ket qua Kaggle Public LB chinh thuc:** **`submit_run4a_inference_only` (V4) = `0.00998`** (Stage 2 doc lap tren Base goc), **`submit_run6b_wave3_inference_only` (V1) = `0.00997`** (ngang dinh Stage 1 `0.00997` va duoc Kaggle Auto-select; ly do hien thi cung `0.00997` la do thang LB chia cho `8640` buoc — muc `+0.0108/864 = 1.25e-5/step` nam o chu so thap phan thu 5–6).
+
+---
+
+### Wave 4: Reward Shaping Insights & Pure BC Comparison (`run7a_overnight_reward_insights.ipynb`, `2026-11-28`)
+- **Nguoi chay / Moi truong:** `meoluoi3` (`@brea_d`) — Kaggle GPU T4 x2 (`4.50h` wall-clock, `SEED = 42`, `BASE_MODE = 'empty_day'`, Wave 0 3-Fold `[1,4]|[2,7]|[5,8]`, 30/30 kich ban, `864` steps).
+- **Thu muc log:** `experiment_logs/wave_4_reward_insights/` (`12` file nhe `72.5 KB`: `overnight_7a_reward_ablation_summary.csv`, `reward_variance_diagnostics.json`, `overnight_7a_reward_comparison.png`, `exp1/2/3`).
+- **Chan doan phuong sai ham thuong (`reward_variance_diagnostics.json`):**
+  - Raw N-step return `std = 0.11070` -> Counterfactual Residual Reward (`Δr = r_n - r_anc`) `std = 0.00720` (**khu `99.58%` phuong sai thoi tiet ngoai sinh, tang Amplitude SNR `15.38×`**).
+  - `69.40%` mau tham do quanh Base co `Δr < 0` (`p05 = -0.00906` sau gap doi `p95 = +0.00488`), khang dinh Base nam sat vach da bat doi xung.
+- **Bang ket qua 3 thi nghiem (`overnight_7a_reward_ablation_summary.csv`):**
+  - `exp1_counterfactual_delta_reward` (`Δr = r_n - r_anc` + RMS-Normalized AWR): OOF **`-5.0640`** (`Diff +0.0053`, **worst `-0.0042`**, `shield_rate = 0.74%`, `DAWN val_diff = +0.036..+0.084`). **An toan nhat trong cac ban Full-4D** (giam lo duoi `2.3×` so voi `Run 4a` `-0.0097` va `5.8×` so voi Pure BC).
+  - `exp2_asymmetric_comfort_tail_reward` (`2.0×` phat duoi am + `tau = 0.75`): OOF `-5.0675` (`Diff +0.0017`, worst `-0.0059`, win `11/30`). Vi ham regret goc da phat bac 2 va `69.4%` mau am, phat them `2.0×` gay **Over-conservatism**.
+  - `exp3_pure_behavior_cloning_warp` (Pure BC, khong Reward/Critic, phuc vu Moc `11/12`): OOF `-5.0638` (`Diff +0.0054`, **worst `-0.0241`**, chi thang `3/30` va **thua `18/30` kich ban**). Chung minh **Offline RL + Critic (`exp1`/`run4a`) vuot troi Pure BC ve do an toan va tinh nhat quan**.
+
+---
+
+### Wave 5: Co-Adapted Wave 3 (Stage-1 Replay + `Δr` + 6-Day Long-Horizon Eval, `2026-11-28`)
+- **Nguoi chay / Moi truong:** `meoluoi3` (`@brea_d`) — Kaggle GPU T4 x2 (`run7b_overnight_true_wave3_coadapt.ipynb`, `4.33h` wall-clock, Material-Balanced 3-Fold `[1,7]|[2,5]|[4,8]`).
+- **Thu muc log:** `experiment_logs/wave_5_coadapt_wave3/` (`8` file nhe `12.4 KB`: `overnight_7b_wave3_summary.csv`, `long_horizon_multiweek_eval.csv`, `stage1_coadapt_oof_scores.json`, `w3_coadapt_*`).
+- **Ket qua Co-Adapted 3-Fold (`864` steps, 30/30 kich ban, moc Base `-5.0692` -> Stage 1 `-4.9093` = `+0.1599`):**
+  - `w3_coadapt_deltarew_full4d`: OOF **`-4.9080`** (`+0.1613` vs Base, **`+0.0013` vs Stage 1**, `shield_rate = 0.64%`, thắng Stage 1 `12/30`).
+  - `w3_coadapt_deltarew_wateronly`: OOF **`-4.9090`** (`+0.1602` vs Base, `+0.0003` vs Stage 1, **`shield_rate = 0.00%`**) — dat **Monotonic Improvement tuyet doi: `17 thang / 13 hoa / 0 thua`** (`worst_vs_stage1 = 0.000000`, duong o ca `3/3` Fold).
+- **Kiem chung dai han `1728` steps (6 ngay lien tuc tren 6 toa nha, `long_horizon_multiweek_eval.csv`):**
+  - Quy doi `/864 steps`: Base `-13.3872` -> Stage 1 `-13.1066` (`+0.2806`) -> Wave 3 **`-13.1024`** (**`+0.2848` vs Base**, **`+0.0042` vs Stage 1**, khong bi drift o `0/6` toa: `B2/fairbanks_2 +0.0135`, `B1/fairbanks_1 +0.0073`, `B7/fairbanks_7 +0.0026`, `B5/phoenix_1 +0.0017`).
 
 ---
 

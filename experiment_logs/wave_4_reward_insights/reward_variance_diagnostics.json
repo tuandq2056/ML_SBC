@@ -1,0 +1,9 @@
+{
+  "raw_nstep_std": 0.11070460826158524,
+  "counterfactual_delta_std": 0.0071985418908298016,
+  "exogenous_variance_cancelled_pct": 99.57717790506993,
+  "amplitude_snr_gain": 15.378754467291698,
+  "pct_negative_exploratory_deltas": 69.3955756836788,
+  "p05_delta": -0.009064532816410065,
+  "p95_delta": 0.004883019719272852
+}
