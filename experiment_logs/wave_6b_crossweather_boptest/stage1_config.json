@@ -1,0 +1,5 @@
+{
+  "best_alpha": 0.5,
+  "in_dim": 17,
+  "n_folds": 3
+}

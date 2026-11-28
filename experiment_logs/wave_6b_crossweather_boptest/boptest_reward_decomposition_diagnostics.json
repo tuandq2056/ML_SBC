@@ -1,0 +1,8 @@
+{
+  "n_total_transitions_48scenarios": 123552,
+  "std_delta_total_rn": 0.02751626819372177,
+  "std_delta_comfort_regret": 0.03766286000609398,
+  "std_delta_energy_cost": 0.029864368960261345,
+  "std_delta_carbon_emission": 0.0767514631152153,
+  "pct_steps_energy_saved_with_zero_comfort_loss": 45.65716369564751
+}

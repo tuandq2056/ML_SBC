@@ -1,0 +1,2 @@
+method,oof_mean,oof_std,gain_vs_base_mean,gain_vs_base_std,gain_vs_s1_mean,gain_vs_s1_std,worst_vs_s1_mean
+"Enriched_CrossWeather_BOPTEST_Wave3 (3 Seeds: 42, 123, 2026)",-4.883407261746551,0.0005324248582279559,0.18581497243847278,0.0005324248582278425,0.003975485555727371,0.0005324248582278378,-0.006527281060698442

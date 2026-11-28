@@ -1,0 +1,4 @@
+stage1_variant,n_train_scenarios,oof_mean,diff_vs_base
+11D_Wave1_Reference,30,-4.909274,0.15994823418502335
+17D_Enriched_Orig30,30,-4.887382747302278,0.18183948688274487
+17D_Enriched_CrossWeather48,48,-4.896998972836324,0.17222326134869892

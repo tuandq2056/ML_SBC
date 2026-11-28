@@ -1,0 +1,13 @@
+{
+  "base_mode": "empty_day",
+  "comfort_shield": true,
+  "shield_margin": 0.05,
+  "target_water_only": false,
+  "unpinned_water": true,
+  "relaxed_water_shield": true,
+  "zone_dim": 12,
+  "global_dim": 13,
+  "thermal_in_dim": 17,
+  "n_folds": 3,
+  "variant": "boptest_guarded_seed123"
+}

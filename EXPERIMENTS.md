@@ -20,6 +20,8 @@ Chi tiet ly thuyet, kien truc va quy trinh push file xem tai [`WORKFLOW.md`](WOR
 | **Wave 3** | **Stage 1 (`ThermalResidualResNet`) + Stage 2 (`run4a` 3-Paper Upgrade, MRO Parity `0.00000000`)** | `run6b_wave3_stage1_plus_stage2.ipynb` (`meoluoi3`) | Wave 0 3-Fold (`[1,4]\|[2,7]\|[5,8]`) | **`-4.8954`** | **`+0.1738`** *(+0.0108 vs S1)* | **`0.00997`** *(`Run 6b`)* | **Ky luc moi toan team (thang Base 6/6 toa):** `MRO diff=0.00000000`, LB ngang dinh `0.00997` (Stage 2 them `+0.0108/864 = 1.25e-5/step`) |
 | **Wave 4** | **Reward Insights & BC Baseline (`Run 7a`):** Counterfactual `Δr`, Asymmetric `2x`, Pure BC Spline | `run7a_overnight_reward_insights.ipynb` (`meoluoi3`) | Wave 0 3-Fold (`[1,4]\|[2,7]\|[5,8]`) | **`-5.0640`** *(`Δr`)* / `-5.0638` *(BC)* | **`+0.0053`** *(worst `-0.0042`)* | - | **Khu `99.58%` nhieu thoi tiet (`SNR 15.38x`):** `Δr` an toan gap `5.8x` Pure BC (`-0.0042` vs `-0.0241`, BC thua `18/30` kich ban) |
 | **Wave 5** | **Co-Adapted Wave 3 (`Run 7b`):** Stage-1 Replay + `Δr` (`Full4D` vs `WaterOnly`) + **6-Day Eval (`1728` steps)** | `run7b_overnight_true_wave3_coadapt.ipynb` (`meoluoi3`) | Material-Balanced 3-Fold (`[1,7]\|[2,5]\|[4,8]`) | **`-4.9080`** *(`Full4D`)* / `-4.9090` *(`Water`)* | **`+0.1613`** *(`+0.0013` vs S1)* | - | **Monotonic & 6-Day Durable:** `WaterOnly` thang `17/30` hoa `13/30` thua **`0/30`**; dai han `1728` steps thang S1 o **ca `6/6` toa** |
+| **Wave 6a** | **Enriched v2 `LOOCV-6` + Unpinned Water Spline (`Run 8a`):** `17D` S1 (`2016` steps) + `ChannelAwareSplineWarp` + Demand Shield | `run8a_enriched_loocv6_wave3.ipynb` (`meoluoi3`) | 6-Fold LOOCV (`5/6` bldgs/fold) | **`-4.8782`** *(`WaterOnly`)* / `-4.8811` *(`Full4D`)* | **`+0.1910`** *(**`+0.0093`** vs S1 `-4.8876`)* | *(San sang submit)* | **Ky luc moi toan team:** `17D` S1 dat `-4.8876`, Stage 2 `WaterOnly` tang **35.7x** `Run 7b`, thang **`17/30` hoa `13/30` thua `0/30`**, 7 ngay tang `+0.0128/864st` |
+| **Wave 6b** | **Cross-Weather + BOPTEST Reward + 3-Seed Significance (`Run 8b`):** `48` kich ban (co `minneapolis`) + `3 Seeds` + `EPI=0` Ablation | `run8b_enriched_crossweather_boptest_reward.ipynb` (`meoluoi3`) | Material-Balanced 3-Fold (`[1,7]\|[2,5]\|[4,8]`) | **`-4.8834 ± 0.0005`** *(3 Seeds)* | **`+0.1858 ± 0.0005`** *(`+0.0040` vs S1)* | - | **NeurIPS 3-Seed & Ablations:** `17D Orig30` (`-4.8874`) > `CW48` (`-4.8970`); `45.66%` buoc tiet kiem 0 lo comfort; tat `EPI` giam gain `16.6%` & tang lo duoi `39.1%` |
 
 ---
 
@@ -153,6 +155,31 @@ Chi tiet ly thuyet, kien truc va quy trinh push file xem tai [`WORKFLOW.md`](WOR
   - `w3_coadapt_deltarew_wateronly`: OOF **`-4.9090`** (`+0.1602` vs Base, `+0.0003` vs Stage 1, **`shield_rate = 0.00%`**) — dat **Monotonic Improvement tuyet doi: `17 thang / 13 hoa / 0 thua`** (`worst_vs_stage1 = 0.000000`, duong o ca `3/3` Fold).
 - **Kiem chung dai han `1728` steps (6 ngay lien tuc tren 6 toa nha, `long_horizon_multiweek_eval.csv`):**
   - Quy doi `/864 steps`: Base `-13.3872` -> Stage 1 `-13.1066` (`+0.2806`) -> Wave 3 **`-13.1024`** (**`+0.2848` vs Base**, **`+0.0042` vs Stage 1**, khong bi drift o `0/6` toa: `B2/fairbanks_2 +0.0135`, `B1/fairbanks_1 +0.0073`, `B7/fairbanks_7 +0.0026`, `B5/phoenix_1 +0.0017`).
+
+---
+
+### Wave 6a: Enriched v2 `LOOCV-6` + Unpinned Water Spline (`run8a_enriched_loocv6_wave3.ipynb`, `2026-11-28`)
+- **Nguoi chay / Moi truong:** `meoluoi3` (`@brea_d`) — Kaggle GPU T4 x2 (`4.12h` wall-clock, `6-Fold LOOCV`, `30/30` kich ban).
+- **Thu muc log:** `experiment_logs/wave_6a_enriched_loocv6/` (`13` file nhe `25.0 KB`: `run8a_enriched_loocv6_summary.csv`, `stage1_17d_loocv6_metrics.csv`, `run8a_7day_2016_eval.csv`, `oof_stage2_iql_warp.csv`, `v2_7day_boptest_audit.csv`, ...).
+- **Nang cap cot loi:**
+  1. **Enrichment v2 + 7-Day (`2016` steps) + `6-Fold LOOCV`:** `3,252,610` mau nhiet `17D` -> Stage 1 giam MAE `22.96%–41.66%` tren ca `6/6` toa an, dat OOF **`-4.887551`** (`+0.181672` vs Base, vuot Stage 1 11D 3-Fold `-4.906247` them `+0.0187`).
+  2. **Go 3 nut that Stage 2 (`ChannelAwareSplineWarp` + Demand Water Shield + Active-Fold Ensemble):** Mo bien kenh nuoc (`bound=1.65, max_d=6.50`, ha duoc `345 K -> 310 K`) va thu `77,220` transitions Multi-Policy (`Anchor + Ortho + PIDWaterReset`).
+- **Ket qua 30 kich ban OOF (`864` steps):**
+  - `loocv6_v2_unpinned_wateronly` *(Winner)*: OOF **`-4.878238`** (**`+0.190984` vs Base**, **`+0.009313` vs 17D Stage 1** — tang **`35.7x`** so voi `Run 7b Water-Only`!), **`17` thang / `13` hoa / `0` thua** (`worst_vs_stage1 = 0.000000`, `shield_rate = 0.00%`), duong o **ca `6/6` toa** (`B1: +0.0226`, `B8: +0.0152`, `B7: +0.0072`, `B4: +0.0066`, `B5: +0.0030`, `B2: +0.0012`).
+  - `loocv6_v2_unpinned_full4d`: OOF `-4.881112` (`+0.188110` vs Base, `+0.006439` vs S1, nhung `phoenix` bi lo `-0.0392`).
+- **Kiem chung du 7 ngay (`2016` steps, `run8a_7day_2016_eval.csv`):**
+  - Quy doi `/864 steps`: Base `-11.7395` -> Stage 1 `-11.4522` (`+0.2873`) -> Wave 3 **`-11.4394`** (**`+0.3001` vs Base**, **`+0.0128` vs Stage 1**, duong o **ca `6/6` toa**).
+
+---
+
+### Wave 6b: Cross-Weather Enrichment + BOPTEST Reward + 3-Seed NeurIPS Significance (`run8b_enriched_crossweather_boptest_reward.ipynb`, `2026-11-28`)
+- **Nguoi chay / Moi truong:** `meoluoi3` (`@brea_d`) — Kaggle GPU T4 x2 (`6.79h` wall-clock, Material-Balanced 3-Fold `[1,7]|[2,5]|[4,8]`, `48` kich ban train gom `+18` kich ban co `minneapolis_1..6`).
+- **Thu muc log:** `experiment_logs/wave_6b_crossweather_boptest/` (`17` file nhe `29.7 KB`: `cross_weather_stage1_ablation.csv`, `boptest_reward_decomposition_diagnostics.json`, `run8b_all_experiments_summary.csv`, `neurips_3seed_significance_table.csv`, ...).
+- **Ket qua & Insight chinh:**
+  1. **Enrichment (`17D`) > Cross-Weather (`48` kich ban):** `17D Orig30` dat `-4.887383` (`+0.181839` vs Base), trong khi `17D CrossWeather48` dat `-4.896999` (`+0.172223`) do them nhieu kich ban lanh lam lech phan phoi khi hau khi chay closed-loop.
+  2. **Phan ra BOPTEST (`123,552` transitions):** **`45.66%`** buoc tham do tiet kiem chi phi nang luong ma **khong tang vi pham comfort (`ΔComfort <= 0`)**; `std(ΔCarbon) = 0.0768` cao gap `2.57x` `std(ΔEnergy) = 0.0299`.
+  3. **Bang 3-Seed NeurIPS (`Seeds 42, 123, 2026`, `boptest_guarded`):** OOF **`-4.883407 ± 0.000532`** (`+0.185815 ± 0.000532` vs Base, **`+0.003975 ± 0.000532`** vs S1 — duong ca `3/3` seed).
+  4. **Ablation `EPI_PENALTY` (`Seed 42`):** Tat phạt bat dinh (`0.50 -> 0.00`) lam giam gain tren S1 **`16.6%`** (`+0.003400 -> +0.002836`) va tang lo kich ban te nhat **`39.1%`** (`-0.011863 -> -0.016496`).
 
 ---
 
